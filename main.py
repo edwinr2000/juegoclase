@@ -1,3 +1,4 @@
+# Importación de librerías
 import pygame
 import random
 import sys
@@ -8,7 +9,7 @@ pygame.init()
 # Configuración básica
 ANCHO, ALTO = 800, 600
 pantalla = pygame.display.set_mode((ANCHO, ALTO))
-pygame.display.set_caption("Atacando enemigos by Edwin Torres Rincón")
+pygame.display.set_caption("Atacando enemigos por Edwin Torres Rincón")
 NEGRO = (0, 0, 0)
 BLANCO = (255, 255, 255)
 ROJO = (255, 0, 0)
@@ -19,6 +20,7 @@ reloj = pygame.time.Clock()
 # Variables globales
 frecuencia_enemigos = 120
 nombre_jugador = ""
+musica_reproduciendo = False  # Estado de la música
 
 # Función para mostrar texto en pantalla
 def mostrar_texto(texto, tamaño, x, y, color=BLANCO, centrado=True):
@@ -27,18 +29,35 @@ def mostrar_texto(texto, tamaño, x, y, color=BLANCO, centrado=True):
     rect_texto = superficie_texto.get_rect(center=(x, y)) if centrado else superficie_texto.get_rect(topleft=(x, y))
     pantalla.blit(superficie_texto, rect_texto)
 
+# Función para alternar (Play/Pause)
+def alternar_musica():
+    global musica_reproduciendo
+    if musica_reproduciendo:
+        pygame.mixer.music.pause()  # Pausa la música
+    else:
+        pygame.mixer.music.unpause()  # Reanuda la música
+    musica_reproduciendo = not musica_reproduciendo
+
 # Menú inicial
 def menu_inicio():
-    global frecuencia_enemigos, nombre_jugador
+    global frecuencia_enemigos, nombre_jugador, dificultad_seleccionada, musica_reproduciendo
     ejecutando_menu = True
     entrada = ""
     dificultad_seleccionada = "Fácil"
 
+    # Botones para elegir la dificultad del juego
     botones_dificultad = {
         "Fácil": pygame.Rect(ANCHO // 2 - 150, ALTO // 2 + 100, 100, 50),
         "Medio": pygame.Rect(ANCHO // 2, ALTO // 2 + 100, 100, 50),
         "Difícil": pygame.Rect(ANCHO // 2 + 150, ALTO // 2 + 100, 100, 50),
     }
+
+    # Sonido del juego
+    pygame.mixer.music.load('Sound.mp3')
+    pygame.mixer.music.play(-1)  # Reproducir en un bucle
+    musica_reproduciendo = True  # La música se reproduce
+
+    boton_play_pause = pygame.Rect(ANCHO - 100, ALTO - 50, 80, 40)
 
     while ejecutando_menu:
         pantalla.fill(NEGRO)
@@ -52,7 +71,12 @@ def menu_inicio():
             pygame.draw.rect(pantalla, color, rect, 2)
             mostrar_texto(nivel, 24, rect.centerx, rect.centery, color)
 
-        mostrar_texto("Presiona Enter para iniciar", 36, ANCHO // 2, ALTO // 2 + 200)
+        mostrar_texto("Cuando estes list@ presiona la tecla enter para iniciar", 36, ANCHO // 2, ALTO // 2 + 200)
+
+        # Botón de Play/Pause
+        color_boton = BLANCO if musica_reproduciendo else ROJO
+        pygame.draw.rect(pantalla, color_boton, boton_play_pause)
+        mostrar_texto("Musica Si/No", 20, boton_play_pause.centerx, boton_play_pause.centery, NEGRO)
 
         for evento in pygame.event.get():
             if evento.type == pygame.QUIT:
@@ -77,6 +101,9 @@ def menu_inicio():
                             frecuencia_enemigos = 60
                         elif nivel == "Difícil":
                             frecuencia_enemigos = 30
+                # Verificar si se ha hecho clic en el botón de Musica Si/No
+                if boton_play_pause.collidepoint(pos_mouse):
+                    alternar_musica()
 
         pygame.display.flip()
         reloj.tick(30)
@@ -171,8 +198,16 @@ def juego():
 
         if vidas <= 0:
             pantalla.fill(NEGRO)
-            mostrar_texto("GAME OVER", 74, ANCHO // 2, ALTO // 2 - 50)
-            mostrar_texto("Haz clic para reiniciar", 36, ANCHO // 2, ALTO // 2 + 50)
+            
+            # Pantalla Final Game Over
+            mostrar_texto("GAME OVER", 74, ANCHO // 2, ALTO // 2 - 100)
+            mostrar_texto(f"Jugador: {nombre_jugador}", 36, ANCHO // 2, ALTO // 2 - 40)
+            mostrar_texto(f"Puntaje: {puntaje}", 36, ANCHO // 2, ALTO // 2)
+            mostrar_texto(f"Nivel de dificultad: {dificultad_seleccionada}", 36, ANCHO // 2, ALTO // 2 + 40)
+            
+            # Instrucción para reiniciar el juego
+            mostrar_texto("Haz clic para reiniciar el juego", 36, ANCHO // 2, ALTO // 2 + 100)
+            
             pygame.display.flip()
             esperar_reinicio()
             return
