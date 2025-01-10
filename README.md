@@ -29,6 +29,7 @@ Desarrollado por Edwin Oswaldo Torres Rincón
 
 ### 4. **Controles adicionales**
    - **Play/Pause Música**: En el menú de inicio, puedes hacer clic en el botón **Música SI/NO** para alternar el sonido de fondo del juego.
+   - **Pausar el juego**: Pulsa la tecla **P** durante el juego para pausar y reanudar la partida.
 
 ### 5. **Objetivo del juego**
    - El objetivo es destruir a los enemigos que caen del espacio y evitar que lleguen al fondo de la pantalla.

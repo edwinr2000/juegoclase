@@ -14,13 +14,14 @@ NEGRO = (0, 0, 0)
 BLANCO = (255, 255, 255)
 ROJO = (255, 0, 0)
 AZUL = (0, 0, 255)
+VERDE = (0, 255, 0)
 
 reloj = pygame.time.Clock()
 
 # Variables globales
 frecuencia_enemigos = 120
 nombre_jugador = ""
-musica_reproduciendo = False  # Estado de la música
+musica_reproduciendo = False  # Variable para controlar el estado de la música.
 
 # Función para mostrar texto en pantalla
 def mostrar_texto(texto, tamaño, x, y, color=BLANCO, centrado=True):
@@ -33,10 +34,18 @@ def mostrar_texto(texto, tamaño, x, y, color=BLANCO, centrado=True):
 def alternar_musica():
     global musica_reproduciendo
     if musica_reproduciendo:
-        pygame.mixer.music.pause()  # Pausa la música
+        pygame.mixer.music.pause()
     else:
-        pygame.mixer.music.unpause()  # Reanuda la música
+        pygame.mixer.music.unpause()
     musica_reproduciendo = not musica_reproduciendo
+
+# Función para crear un enemigo
+def crear_enemigo():
+    return [random.randint(0, ANCHO - 50), 0]
+
+# Función para crear una bala
+def crear_bala(posicion_jugador):
+    return [posicion_jugador[0], posicion_jugador[1]]
 
 # Menú inicial
 def menu_inicio():
@@ -45,25 +54,23 @@ def menu_inicio():
     entrada = ""
     dificultad_seleccionada = "Fácil"
 
-    # Botones para elegir la dificultad del juego
     botones_dificultad = {
         "Fácil": pygame.Rect(ANCHO // 2 - 150, ALTO // 2 + 100, 100, 50),
         "Medio": pygame.Rect(ANCHO // 2, ALTO // 2 + 100, 100, 50),
         "Difícil": pygame.Rect(ANCHO // 2 + 150, ALTO // 2 + 100, 100, 50),
     }
 
-    # Sonido del juego
     pygame.mixer.music.load('Sound.mp3')
-    pygame.mixer.music.play(-1)  # Reproducir en un bucle
-    musica_reproduciendo = True  # La música se reproduce
+    pygame.mixer.music.play(-1)
+    musica_reproduciendo = True
 
     boton_play_pause = pygame.Rect(ANCHO - 100, ALTO - 50, 80, 40)
 
     while ejecutando_menu:
         pantalla.fill(NEGRO)
 
-        mostrar_texto("Bienvenido al juego", 74, ANCHO // 2, ALTO // 4)
-        mostrar_texto("Ingresa tu nombre:", 36, ANCHO // 2, ALTO // 2 - 50)
+        mostrar_texto("Bienvenido a tirador espacial", 74, ANCHO // 2, ALTO // 4)
+        mostrar_texto("Para continuar, ingresa tu nombre:", 36, ANCHO // 2, ALTO // 2 - 50)
         mostrar_texto(entrada, 36, ANCHO // 2, ALTO // 2)
 
         for nivel, rect in botones_dificultad.items():
@@ -71,9 +78,8 @@ def menu_inicio():
             pygame.draw.rect(pantalla, color, rect, 2)
             mostrar_texto(nivel, 24, rect.centerx, rect.centery, color)
 
-        mostrar_texto("Cuando estes list@ presiona la tecla enter para iniciar", 36, ANCHO // 2, ALTO // 2 + 200)
+        mostrar_texto("Presiona Enter para iniciar", 36, ANCHO // 2, ALTO // 2 + 200)
 
-        # Botón de Play/Pause
         color_boton = BLANCO if musica_reproduciendo else ROJO
         pygame.draw.rect(pantalla, color_boton, boton_play_pause)
         mostrar_texto("Musica Si/No", 20, boton_play_pause.centerx, boton_play_pause.centery, NEGRO)
@@ -95,13 +101,7 @@ def menu_inicio():
                 for nivel, rect in botones_dificultad.items():
                     if rect.collidepoint(pos_mouse):
                         dificultad_seleccionada = nivel
-                        if nivel == "Fácil":
-                            frecuencia_enemigos = 120
-                        elif nivel == "Medio":
-                            frecuencia_enemigos = 60
-                        elif nivel == "Difícil":
-                            frecuencia_enemigos = 30
-                # Verificar si se ha hecho clic en el botón de Musica Si/No
+                        frecuencia_enemigos = 120 if nivel == "Fácil" else 60 if nivel == "Medio" else 30
                 if boton_play_pause.collidepoint(pos_mouse):
                     alternar_musica()
 
@@ -131,8 +131,11 @@ def juego():
             if evento.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-            if evento.type == pygame.KEYDOWN and evento.key == pygame.K_SPACE:
-                balas.append([posicion_jugador[0], posicion_jugador[1]])
+            if evento.type == pygame.KEYDOWN:
+                if evento.key == pygame.K_SPACE:
+                    balas.append(crear_bala(posicion_jugador))
+                if evento.key == pygame.K_p:
+                    pausar_juego()
 
         teclas = pygame.key.get_pressed()
         if teclas[pygame.K_LEFT] and posicion_jugador[0] > 0:
@@ -142,7 +145,7 @@ def juego():
 
         contador_frames += 1
         if contador_frames >= frecuencia_enemigos:
-            enemigos.append([random.randint(0, ANCHO - 50), 0])
+            enemigos.append(crear_enemigo())
             contador_frames = 0
 
         for bala in balas[:]:
@@ -156,25 +159,15 @@ def juego():
                 enemigos.remove(enemigo)
                 vidas -= 1
 
-        # Verificar colisiones entre balas y enemigos
         for bala in balas[:]:
             for enemigo in enemigos[:]:
-                if (
-                    enemigo[0] < bala[0] < enemigo[0] + 50
-                    and enemigo[1] < bala[1] < enemigo[1] + 50
-                ):
+                if pygame.Rect(*bala, 10, 20).colliderect(pygame.Rect(*enemigo, 50, 50)):
                     balas.remove(bala)
                     enemigos.remove(enemigo)
                     puntaje += 10
 
-        # Verificar colisión entre enemigos y jugador
         for enemigo in enemigos[:]:
-            if (
-                enemigo[0] < posicion_jugador[0] + tamaño_nave // 2
-                and enemigo[0] + 50 > posicion_jugador[0] - tamaño_nave // 2
-                and enemigo[1] < posicion_jugador[1] + tamaño_nave
-                and enemigo[1] + 50 > posicion_jugador[1]
-            ):
+            if pygame.Rect(*enemigo, 50, 50).colliderect(pygame.Rect(posicion_jugador[0] - tamaño_nave // 2, posicion_jugador[1], tamaño_nave, tamaño_nave)):
                 enemigos.remove(enemigo)
                 vidas -= 1
 
@@ -198,22 +191,30 @@ def juego():
 
         if vidas <= 0:
             pantalla.fill(NEGRO)
-            
-            # Pantalla Final Game Over
             mostrar_texto("GAME OVER", 74, ANCHO // 2, ALTO // 2 - 100)
             mostrar_texto(f"Jugador: {nombre_jugador}", 36, ANCHO // 2, ALTO // 2 - 40)
             mostrar_texto(f"Puntaje: {puntaje}", 36, ANCHO // 2, ALTO // 2)
             mostrar_texto(f"Nivel de dificultad: {dificultad_seleccionada}", 36, ANCHO // 2, ALTO // 2 + 40)
-            
-            # Instrucción para reiniciar el juego
             mostrar_texto("Haz clic para reiniciar el juego", 36, ANCHO // 2, ALTO // 2 + 100)
-            
             pygame.display.flip()
             esperar_reinicio()
             return
 
         pygame.display.flip()
         reloj.tick(60)
+
+def pausar_juego():
+    pausado = True
+    while pausado:
+        for evento in pygame.event.get():
+            if evento.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if evento.type == pygame.KEYDOWN and evento.key == pygame.K_p:
+                pausado = False
+        mostrar_texto("Juego pausado. Presiona 'P' para continuar.", 36, ANCHO // 2, ALTO // 2)
+        pygame.display.flip()
+        reloj.tick(30)
 
 def esperar_reinicio():
     while True:
